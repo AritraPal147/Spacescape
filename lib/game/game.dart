@@ -4,6 +4,8 @@ import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
+import 'package:spacescape/game/bullet.dart';
+import 'package:spacescape/game/enemy.dart';
 import 'package:spacescape/game/enemy_manager.dart';
 import 'package:spacescape/game/player.dart';
 
@@ -11,12 +13,29 @@ import 'package:spacescape/game/player.dart';
 class SpacescapeGame extends FlameGame
     with
         HasGameRef,
-        PanDetector {
-
+        PanDetector,
+        TapDetector {
+  // Stores a reference to player component
   late Player player;
+
+  // Stores a reference to the main sprite sheet.
+  late SpriteSheet _spriteSheet;
+
+  // Stores a reference to an enemy manager component.
+  late EnemyManager _enemyManager;
+
+  // These represent the start and updated pointer position.
+  // Null values represent that the user is not touching the screen at the moment.
   Offset? _pointerStartPosition;
   Offset? _pointerCurrentPosition;
+
+  // Controls how big the joystick zone is.
   final double _joystickRadius = 60;
+
+  // Controls how big the joystick thumb is.
+  final double _joystickThumbRadius = 20;
+
+  // Controls how big the dead zone is.
   final double _deadZoneRadius = 10;
 
   // This method gets called by Flame before the game-loop begins.
@@ -28,7 +47,7 @@ class SpacescapeGame extends FlameGame
 
     // Divides the sprite sheet into rows and columns for
     // easier access
-    final spriteSheet = SpriteSheet.fromColumnsAndRows(
+    _spriteSheet = SpriteSheet.fromColumnsAndRows(
       image: images.fromCache('simpleSpace_tilesheet@2.png'),
       columns: 8,
       rows: 6,
@@ -36,7 +55,7 @@ class SpacescapeGame extends FlameGame
 
     // Chooses a sprite and places it on the screen
     player = Player(
-      sprite: spriteSheet.getSpriteById(17),
+      sprite: _spriteSheet.getSpriteById(17),
       size: Vector2(64, 64),
       position: gameRef.size / 2,
     );
@@ -46,8 +65,8 @@ class SpacescapeGame extends FlameGame
     player.anchor = Anchor.center;
     add(player);
     
-    EnemyManager enemyManager = EnemyManager(spriteSheet: spriteSheet);
-    add(enemyManager);
+    _enemyManager = EnemyManager(spriteSheet: _spriteSheet);
+    add(_enemyManager);
   }
 
   // Adds joystick
@@ -73,7 +92,7 @@ class SpacescapeGame extends FlameGame
 
       // Checks if magnitude of delta is greater than 60, i.e. the smaller circle
       // does not go outside the bigger circle which has radius of 60
-      if (delta.distance > 60) {
+      if (delta.distance > _joystickRadius) {
         delta = _pointerStartPosition! +
             (Vector2(delta.dx, delta.dy).normalized() * _joystickRadius).toOffset();
       } else {
@@ -82,9 +101,30 @@ class SpacescapeGame extends FlameGame
 
       canvas.drawCircle(
         delta,
-        20,
+        _joystickThumbRadius,
         Paint()..color = Colors.white.withAlpha(100),
       );
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    // Removes both enemy and bullet when they collide.
+    for (final enemy in children.whereType<Enemy>()) {
+      for (final bullet in children.whereType<Bullet>()) {
+        // containsPoint() returns true if given point lies inside rectangle of current sprite
+        if (enemy.containsPoint(bullet.absoluteCenter)) {
+          enemy.removeFromParent();
+          bullet.removeFromParent();
+          break;
+        }
+      }
+
+      if (player.containsPoint(enemy.absoluteCenter)) {
+        print("Enemy hits player");
+      }
     }
   }
 
@@ -92,6 +132,7 @@ class SpacescapeGame extends FlameGame
   // start and stores it in _pointerStartPosition
   @override
   void handlePanStart(DragStartDetails details) {
+    // Initially, both small and big circles will be placed at the same location.
     _pointerStartPosition = details.globalPosition;
     _pointerCurrentPosition = details.globalPosition;
   }
@@ -128,5 +169,19 @@ class SpacescapeGame extends FlameGame
     _pointerStartPosition = null;
     _pointerCurrentPosition = null;
     player.setMoveDirection(Vector2.zero());
+  }
+
+  @override
+  void handleTapDown(TapDownDetails details) {
+    super.handleTapDown(details);
+
+    Bullet bullet = Bullet(
+      sprite: _spriteSheet.getSpriteById(28),
+      size: Vector2(64, 64),
+      position: player.position.clone(),
+    );
+
+    bullet.anchor = Anchor.center;
+    add(bullet);
   }
 }

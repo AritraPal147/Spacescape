@@ -38,7 +38,7 @@ class EnemyManager extends Component
     );
 
     Enemy enemy = Enemy(
-      sprite: spriteSheet.getSpriteById(17),
+      sprite: spriteSheet.getSpriteById(20),
       size: initialSize,
       position: position,
     );
