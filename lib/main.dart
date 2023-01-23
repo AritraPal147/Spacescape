@@ -14,8 +14,13 @@ void main() {
   */
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  // This opens the app in fullscreen move
   Flame.device.fullScreen();
+
   runApp(
+    // GameWidget is useful to inject the underlying
+    // widget of any class extending from Flame's game class
     GameWidget(
       game: SpacescapeGame(),
     ),

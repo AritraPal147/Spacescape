@@ -3,13 +3,14 @@ import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/sprite.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:spacescape/game/enemy_manager.dart';
 import 'package:spacescape/game/player.dart';
 
 // This class is responsible for initializing and running the game-loop
 class SpacescapeGame extends FlameGame
-    with HasGameRef,
+    with
+        HasGameRef,
         PanDetector {
 
   late Player player;
@@ -43,11 +44,15 @@ class SpacescapeGame extends FlameGame
     // Makes sure that the sprite is centered
     // default anchor is Top Left
     player.anchor = Anchor.center;
-
     add(player);
+    
+    EnemyManager enemyManager = EnemyManager(spriteSheet: spriteSheet);
+    add(enemyManager);
   }
 
   // Adds joystick
+  // Render method comes from Flame's Game class and gets called for every iteration
+  // of game loop. It exposes the underlying Canvas on which components are being drawn.
   @override
   void render(Canvas canvas) {
     super.render(canvas);
